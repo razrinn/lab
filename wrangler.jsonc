@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "lab",
+  // Set this to today's date
+  "compatibility_date": "2026-06-12",
+  "assets": {
+    "not_found_handling": "single-page-application"
+  }
+}
