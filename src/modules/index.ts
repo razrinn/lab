@@ -1,6 +1,7 @@
 import { base64Modules } from "./base64";
 import { diffModules } from "./diff";
 import { envModules } from "./env";
+import { jsonToTsModules } from "./json-to-ts";
 import { jsonModules } from "./json";
 import type { LabModule } from "./types";
 
@@ -9,4 +10,5 @@ export const modules: LabModule[] = [
   ...diffModules,
   ...envModules,
   ...jsonModules,
+  ...jsonToTsModules,
 ];

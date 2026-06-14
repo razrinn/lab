@@ -3,6 +3,7 @@ import { decodeBase64, encodeBase64 } from "./modules/base64.ts";
 import { diffPanels, diffText } from "./modules/diff.ts";
 import { envToJson, jsonToEnv } from "./modules/env.ts";
 import { modules } from "./modules/index.ts";
+import { jsonToTypescript } from "./modules/json-to-ts.ts";
 import { minifyJson, prettyJson } from "./modules/json.ts";
 
 describe("base64 transforms", () => {
@@ -100,9 +101,40 @@ describe("json transforms", () => {
   });
 });
 
+describe("json to typescript transform", () => {
+  it("infers inline types", () => {
+    expect(
+      jsonToTypescript(
+        '{"id":1,"name":"Lab","tags":["tool"],"profile":{"active":true,"email":null}}',
+      ),
+    ).toBe(
+      "type Root = {\n  id: number;\n  name: string;\n  tags: string[];\n  profile: {\n    active: boolean;\n    email: null;\n  };\n};",
+    );
+  });
+
+  it("can compose interfaces and merge object arrays", () => {
+    expect(
+      jsonToTypescript('[{"id":1,"name":"A"},{"id":2,"active":true}]', {
+        rootName: "Users",
+        declaration: "interface",
+        structure: "composed",
+        optional: false,
+      }),
+    ).toBe(
+      "type Users = User[];\n\ninterface User {\n  id: number;\n  name?: string;\n  active?: boolean;\n}",
+    );
+  });
+});
+
 describe("module registry", () => {
   it("combines paired transforms into reversible tools", () => {
-    expect(modules.map((tool) => tool.id)).toEqual(["base64", "text-diff", "env-json", "json"]);
+    expect(modules.map((tool) => tool.id)).toEqual([
+      "base64",
+      "text-diff",
+      "env-json",
+      "json",
+      "json-ts",
+    ]);
     expect(modules.filter((tool) => tool.reverseTransform).map((tool) => tool.id)).toEqual([
       "base64",
       "env-json",
