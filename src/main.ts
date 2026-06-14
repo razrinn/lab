@@ -4,12 +4,12 @@ import { modules } from './modules';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
 app.innerHTML = `
-<main class="grid min-h-screen grid-cols-1 bg-[#1a1b26] text-[#c0caf5] md:grid-cols-[13rem_1fr]">
+<main class="grid h-dvh grid-rows-[minmax(0,16rem)_1fr] overflow-hidden bg-[#1a1b26] text-[#c0caf5] md:grid-cols-[13rem_1fr] md:grid-rows-1">
   <aside class="flex min-h-0 flex-col border-b border-[#3b4261] bg-[#16161e] p-3 md:border-r md:border-b-0">
     <div class="mb-3">
       <h1 class="font-black text-[#d5defe] md:mb-1">lab.rzrn.dev</h1>
     </div>
-    <nav class="tool-list grid grid-cols-2 gap-1.5 md:grid-cols-1" aria-label="Tools"></nav>
+    <nav class="tool-list grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-1.5 overflow-y-auto md:grid-cols-1" aria-label="Tools"></nav>
     <button id="copy" class="mt-3 rounded-md border border-[#7aa2f7]/60 px-3 py-2 text-left text-sm font-black text-[#7dcfff] hover:bg-[#7aa2f7]/10" type="button">
       Copy output
     </button>
