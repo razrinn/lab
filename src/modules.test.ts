@@ -29,8 +29,10 @@ describe("diff transforms", () => {
   it("renders changed characters on both sides", () => {
     const diff = diffPanels("old value", "new value");
 
+    expect(diff.left).toContain('class="diff-line-removed"');
     expect(diff.left).toContain("<mark");
     expect(diff.left).toContain(">o</mark>");
+    expect(diff.right).toContain('class="diff-line-added"');
     expect(diff.right).toContain("<mark");
     expect(diff.right).toContain(">n</mark>");
   });

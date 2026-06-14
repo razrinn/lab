@@ -20,3 +20,32 @@ textarea {
 textarea {
   white-space: pre;
 }
+
+.diff-line-added,
+.diff-line-removed {
+  display: inline-block;
+  min-width: 100%;
+}
+
+.diff-line-added {
+  background: #1a3f2d;
+  color: #9ece6a;
+}
+
+.diff-line-removed {
+  background: #4a1f2a;
+  color: #f7768e;
+}
+
+.diff-char-added,
+.diff-char-removed {
+  color: inherit;
+}
+
+.diff-char-added {
+  background: #0b281b;
+}
+
+.diff-char-removed {
+  background: #2b1017;
+}

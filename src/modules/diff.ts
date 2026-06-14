@@ -62,15 +62,15 @@ const renderParts = (parts: DiffPart[]) =>
       const value = escapeHtml(part.value);
       if (part.kind === "same") return value;
 
-      return `<mark class="${part.kind === "added" ? "bg-[#1f6f43] text-[#c0f7d0]" : "bg-[#7f1d1d] text-[#ffc0c0]"}">${value}</mark>`;
+      return `<mark class="diff-char-${part.kind}">${value}</mark>`;
     })
     .join("");
 
-const renderLine = (kind: "same" | "added" | "removed", value: string) => {
-  const escaped = escapeHtml(value) || " ";
-  if (kind === "same") return escaped;
+const renderLine = (kind: "same" | "added" | "removed", value: string, html = false) => {
+  const content = (html ? value : escapeHtml(value)) || " ";
+  if (kind === "same") return content;
 
-  return `<mark class="${kind === "added" ? "bg-[#123b28] text-[#9ece6a]" : "bg-[#4a1f2a] text-[#f7768e]"}">${escaped}</mark>`;
+  return `<span class="diff-line-${kind}">${content}</span>`;
 };
 
 const diffLines = (left: string, right: string) => {
@@ -133,8 +133,8 @@ export const diffPanels = (left: string, right: string): DiffPanel => {
 
       if (oldLine !== undefined && newLine !== undefined) {
         const changed = diffChars(oldLine, newLine);
-        leftLines.push(changed.left);
-        rightLines.push(changed.right);
+        leftLines.push(renderLine("removed", changed.left, true));
+        rightLines.push(renderLine("added", changed.right, true));
       } else {
         leftLines.push(oldLine === undefined ? "" : renderLine("removed", oldLine));
         rightLines.push(newLine === undefined ? "" : renderLine("added", newLine));

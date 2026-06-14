@@ -58,9 +58,70 @@ let inputTextareas: HTMLTextAreaElement[] = [];
 let inputLineNumbers: HTMLElement[] = [];
 let diffEditors: HTMLElement[] = [];
 let diffLineNumbers: HTMLElement[] = [];
+let diffScrolls: HTMLElement[] = [];
+let syncingDiffScroll = false;
 
 const lineNumbers = (value: string) =>
   Array.from({ length: value.split("\n").length }, (_, index) => String(index + 1)).join("\n");
+
+const diffLineNumbersFor = (editor: HTMLElement) => {
+  const text = diffEditorText(editor);
+  if (!shouldWrapLines) return lineNumbers(text);
+
+  const style = getComputedStyle(editor);
+  const width = editor.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  const measure = document.createElement("span");
+  measure.style.font = style.font;
+  measure.style.position = "absolute";
+  measure.style.visibility = "hidden";
+  measure.textContent = "0";
+  document.body.append(measure);
+  const charsPerLine = Math.max(1, Math.floor(width / measure.getBoundingClientRect().width));
+  measure.remove();
+
+  return text
+    .split("\n")
+    .flatMap((line, index) => [
+      String(index + 1),
+      ...Array(Math.max(1, Math.ceil(Array.from(line).length / charsPerLine)) - 1).fill(""),
+    ])
+    .join("\n");
+};
+
+const caretAnchor = "\u200b";
+const diffEditorDomText = (editor: HTMLElement) =>
+  (editor.textContent ?? "").replaceAll(caretAnchor, "");
+const diffEditorText = (editor: HTMLElement) => editor.dataset.text ?? diffEditorDomText(editor);
+const saveDiffEditorText = (editor: HTMLElement) => {
+  editor.dataset.text = diffEditorDomText(editor);
+};
+
+const unlockDiffEditor = (editor: HTMLElement) => {
+  if (!editor.dataset.locked) return;
+
+  editor.textContent = diffEditorText(editor);
+  editor.contentEditable = "true";
+  delete editor.dataset.locked;
+  editor.focus();
+};
+
+const unlockDiffEditors = (focused: HTMLElement) => {
+  diffEditors.forEach(unlockDiffEditor);
+  focused.focus();
+};
+
+const syncDiffScroll = (source: HTMLElement) => {
+  if (syncingDiffScroll || diffEditors.some((editor) => !editor.dataset.locked)) return;
+
+  syncingDiffScroll = true;
+  diffScrolls.forEach((scroll) => {
+    if (scroll === source) return;
+
+    scroll.scrollTop = source.scrollTop;
+    scroll.scrollLeft = source.scrollLeft;
+  });
+  syncingDiffScroll = false;
+};
 
 const refreshLines = () => {
   inputTextareas.forEach((input, index) => {
@@ -71,8 +132,22 @@ const refreshLines = () => {
 
 const refreshDiffLines = () => {
   diffEditors.forEach((editor, index) => {
-    diffLineNumbers[index].textContent = lineNumbers(editor.innerText);
+    diffLineNumbers[index].textContent = diffLineNumbersFor(editor);
   });
+};
+
+const insertTextAtCursor = (text: string) => {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  const node = document.createTextNode(text);
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
 };
 
 const setWrap = () => {
@@ -142,9 +217,9 @@ const renderDiffInputs = () => {
           <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
             ${input.label}
           </div>
-          <div class="grid min-h-0 grid-cols-[auto_1fr]">
-            <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
-            <pre class="diff-editor m-0 overflow-auto whitespace-pre-wrap wrap-break-word bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" contenteditable="true" spellcheck="false"></pre>
+          <div class="diff-scroll grid min-h-0 grid-cols-[auto_minmax(0,1fr)] overflow-auto">
+            <pre class="line-numbers sticky left-0 z-10 m-0 border-r border-[#292e42] bg-[#16161e] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
+            <pre class="diff-editor m-0 min-w-0 bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" contenteditable="true" spellcheck="false"></pre>
           </div>
         </section>
       `,
@@ -153,12 +228,29 @@ const renderDiffInputs = () => {
 
   diffEditors = Array.from(inputPanel.querySelectorAll(".diff-editor"));
   diffLineNumbers = Array.from(inputPanel.querySelectorAll(".line-numbers"));
+  diffScrolls = Array.from(inputPanel.querySelectorAll(".diff-scroll"));
   diffEditors.forEach((editor, index) => {
     editor.textContent = active.inputs[index].sample;
-    editor.addEventListener("input", refreshDiffLines);
-    editor.addEventListener("scroll", () => {
-      diffLineNumbers[index].scrollTop = editor.scrollTop;
+    saveDiffEditorText(editor);
+    editor.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+
+      event.preventDefault();
+      insertTextAtCursor(`\n${caretAnchor}`);
+      saveDiffEditorText(editor);
+      refreshDiffLines();
     });
+    editor.addEventListener("input", () => {
+      saveDiffEditorText(editor);
+      refreshDiffLines();
+    });
+    editor.addEventListener("click", () => {
+      unlockDiffEditors(editor);
+      refreshDiffLines();
+    });
+  });
+  diffScrolls.forEach((scroll) => {
+    scroll.addEventListener("scroll", () => syncDiffScroll(scroll));
   });
   setWrap();
   refreshDiffLines();
@@ -182,9 +274,13 @@ const renderTools = () => {
 
 const run = () => {
   if (active.id === "text-diff") {
-    const diff = diffPanels(diffEditors[0].innerText, diffEditors[1].innerText);
+    const diff = diffPanels(diffEditorText(diffEditors[0]), diffEditorText(diffEditors[1]));
     diffEditors[0].innerHTML = diff.left;
     diffEditors[1].innerHTML = diff.right;
+    diffEditors.forEach((editor) => {
+      editor.contentEditable = "false";
+      editor.dataset.locked = "true";
+    });
     refreshDiffLines();
     return;
   }
@@ -239,7 +335,9 @@ wrapLines.addEventListener("change", () => {
   shouldWrapLines = wrapLines.checked;
   localStorage.setItem(wrapLinesKey, String(shouldWrapLines));
   setWrap();
+  refreshDiffLines();
 });
+window.addEventListener("resize", refreshDiffLines);
 action.addEventListener("click", async () => {
   if (active.id === "text-diff") {
     run();
