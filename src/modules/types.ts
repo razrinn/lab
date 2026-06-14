@@ -1,9 +1,13 @@
+export type LabModuleInput = {
+  label: string
+  placeholder: string
+  sample: string
+}
+
 export type LabModule = {
   id: string
   name: string
-  inputLabel: string
   outputLabel: string
-  placeholder: string
-  sample: string
-  transform: (value: string) => string
+  inputs: LabModuleInput[]
+  transform: (values: string[]) => string
 }

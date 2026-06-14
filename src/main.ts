@@ -1,5 +1,6 @@
 import './style.css';
 import { modules } from './modules';
+import { diffPanels } from './modules/diff';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -15,18 +16,10 @@ app.innerHTML = `
     </button>
   </aside>
 
-  <section class="grid min-h-0 grid-rows-2 bg-[#3b4261] md:grid-cols-2 md:grid-rows-1">
-    <section class="grid min-h-0 grid-rows-[auto_1fr] bg-[#16161e] md:border-r md:border-[#3b4261]">
-      <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
-        <span id="input-label"></span>
-      </div>
-      <div class="grid min-h-0 grid-cols-[auto_1fr]">
-        <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" id="input-lines" aria-hidden="true">1</pre>
-        <textarea id="input" class="min-w-0 resize-none overflow-auto bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none placeholder:text-[#565f89]" spellcheck="false" autocomplete="off" wrap="off"></textarea>
-      </div>
-    </section>
+  <section class="grid min-h-0 grid-rows-2 bg-[#3b4261] md:grid-cols-2 md:grid-rows-1" id="workspace">
+    <section class="grid min-h-0 bg-[#16161e] md:border-r md:border-[#3b4261]" id="input-panel"></section>
 
-    <section class="grid min-h-0 grid-rows-[auto_1fr] bg-[#16161e]">
+    <section class="grid min-h-0 grid-rows-[auto_1fr] bg-[#16161e]" id="output-section">
       <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
         <span id="output-label"></span>
       </div>
@@ -40,18 +33,22 @@ app.innerHTML = `
 `;
 
 const toolList = app.querySelector<HTMLElement>('.tool-list')!;
-const input = app.querySelector<HTMLTextAreaElement>('#input')!;
+const workspace = app.querySelector<HTMLElement>('#workspace')!;
+const inputPanel = app.querySelector<HTMLElement>('#input-panel')!;
+const outputSection = app.querySelector<HTMLElement>('#output-section')!;
 const output = app.querySelector<HTMLTextAreaElement>('#output')!;
-const inputLabel = app.querySelector<HTMLElement>('#input-label')!;
 const outputLabel = app.querySelector<HTMLElement>('#output-label')!;
-const copy = app.querySelector<HTMLButtonElement>('#copy')!;
-const inputLines = app.querySelector<HTMLElement>('#input-lines')!;
+const action = app.querySelector<HTMLButtonElement>('#copy')!;
 const outputLines = app.querySelector<HTMLElement>('#output-lines')!;
 
 const selectedToolKey = 'lab:selected-tool';
 let active =
   modules.find((tool) => tool.id === localStorage.getItem(selectedToolKey)) ??
   modules[0];
+let inputTextareas: HTMLTextAreaElement[] = [];
+let inputLineNumbers: HTMLElement[] = [];
+let diffEditors: HTMLElement[] = [];
+let diffLineNumbers: HTMLElement[] = [];
 
 const lineNumbers = (value: string) =>
   Array.from({ length: value.split('\n').length }, (_, index) =>
@@ -59,8 +56,87 @@ const lineNumbers = (value: string) =>
   ).join('\n');
 
 const refreshLines = () => {
-  inputLines.textContent = lineNumbers(input.value);
+  inputTextareas.forEach((input, index) => {
+    inputLineNumbers[index].textContent = lineNumbers(input.value);
+  });
   outputLines.textContent = lineNumbers(output.value);
+};
+
+const refreshDiffLines = () => {
+  diffEditors.forEach((editor, index) => {
+    diffLineNumbers[index].textContent = lineNumbers(editor.innerText);
+  });
+};
+
+const renderInputs = () => {
+  const multi = active.inputs.length > 1;
+
+  workspace.className = 'grid min-h-0 grid-rows-2 bg-[#3b4261] md:grid-cols-2 md:grid-rows-1';
+  inputPanel.className = `grid min-h-0 bg-[#16161e] md:border-r md:border-[#3b4261] ${multi ? 'grid-rows-2 md:grid-cols-2 md:grid-rows-1' : ''}`;
+  outputSection.hidden = false;
+  action.textContent = 'Copy output';
+  inputPanel.innerHTML = active.inputs
+    .map(
+      (input, index) => `
+        <section class="grid min-h-0 grid-rows-[auto_1fr] ${index < active.inputs.length - 1 ? 'border-b border-[#3b4261] md:border-r md:border-b-0' : ''}">
+          <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
+            ${input.label}
+          </div>
+          <div class="grid min-h-0 grid-cols-[auto_1fr]">
+            <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
+            <textarea class="min-w-0 resize-none overflow-auto bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none placeholder:text-[#565f89]" spellcheck="false" autocomplete="off" wrap="off"></textarea>
+          </div>
+        </section>
+      `,
+    )
+    .join('');
+
+  inputTextareas = Array.from(inputPanel.querySelectorAll('textarea'));
+  inputLineNumbers = Array.from(inputPanel.querySelectorAll('.line-numbers'));
+
+  inputTextareas.forEach((input, index) => {
+    input.placeholder = active.inputs[index].placeholder;
+    input.value = active.inputs[index].sample;
+    input.addEventListener('input', run);
+    input.addEventListener('scroll', () => {
+      inputLineNumbers[index].scrollTop = input.scrollTop;
+    });
+  });
+};
+
+const renderDiffInputs = () => {
+  workspace.className = 'grid min-h-0 bg-[#3b4261]';
+  outputSection.hidden = true;
+  action.textContent = 'Find diff';
+  inputTextareas = [];
+  inputLineNumbers = [];
+  inputPanel.className = 'grid min-h-0 grid-rows-2 bg-[#16161e] md:grid-cols-2 md:grid-rows-1';
+  inputPanel.innerHTML = active.inputs
+    .map(
+      (input, index) => `
+        <section class="grid min-h-0 grid-rows-[auto_1fr] ${index === 0 ? 'border-b border-[#3b4261] md:border-r md:border-b-0' : ''}">
+          <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
+            ${input.label}
+          </div>
+          <div class="grid min-h-0 grid-cols-[auto_1fr]">
+            <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
+            <pre class="diff-editor m-0 overflow-auto whitespace-pre-wrap break-words bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" contenteditable="true" spellcheck="false"></pre>
+          </div>
+        </section>
+      `,
+    )
+    .join('');
+
+  diffEditors = Array.from(inputPanel.querySelectorAll('.diff-editor'));
+  diffLineNumbers = Array.from(inputPanel.querySelectorAll('.line-numbers'));
+  diffEditors.forEach((editor, index) => {
+    editor.textContent = active.inputs[index].sample;
+    editor.addEventListener('input', refreshDiffLines);
+    editor.addEventListener('scroll', () => {
+      diffLineNumbers[index].scrollTop = editor.scrollTop;
+    });
+  });
+  refreshDiffLines();
 };
 
 const renderTools = () => {
@@ -80,11 +156,18 @@ const renderTools = () => {
 };
 
 const run = () => {
-  inputLabel.textContent = active.inputLabel;
+  if (active.id === 'text-diff') {
+    const diff = diffPanels(diffEditors[0].innerText, diffEditors[1].innerText);
+    diffEditors[0].innerHTML = diff.left;
+    diffEditors[1].innerHTML = diff.right;
+    refreshDiffLines();
+    return;
+  }
+
   outputLabel.textContent = active.outputLabel;
 
   try {
-    output.value = active.transform(input.value);
+    output.value = active.transform(inputTextareas.map((input) => input.value));
   } catch (error) {
     output.value = error instanceof Error ? error.message : 'Invalid input';
   }
@@ -95,10 +178,13 @@ const run = () => {
 const selectTool = (id: string) => {
   active = modules.find((tool) => tool.id === id) ?? modules[0];
   localStorage.setItem(selectedToolKey, active.id);
-  input.placeholder = active.placeholder;
-  input.value = active.sample;
+  if (active.id === 'text-diff') {
+    renderDiffInputs();
+  } else {
+    renderInputs();
+    run();
+  }
   renderTools();
-  run();
 };
 
 toolList.addEventListener('click', (event) => {
@@ -108,18 +194,19 @@ toolList.addEventListener('click', (event) => {
   if (button) selectTool(button.dataset.tool!);
 });
 
-input.addEventListener('input', run);
-input.addEventListener('scroll', () => {
-  inputLines.scrollTop = input.scrollTop;
-});
 output.addEventListener('scroll', () => {
   outputLines.scrollTop = output.scrollTop;
 });
-copy.addEventListener('click', async () => {
+action.addEventListener('click', async () => {
+  if (active.id === 'text-diff') {
+    run();
+    return;
+  }
+
   await navigator.clipboard.writeText(output.value);
-  copy.textContent = 'Copied';
+  action.textContent = 'Copied';
   window.setTimeout(() => {
-    copy.textContent = 'Copy output';
+    action.textContent = 'Copy output';
   }, 1000);
 });
 

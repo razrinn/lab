@@ -13,19 +13,15 @@ export const base64Modules: LabModule[] = [
   {
     id: 'base64-encode',
     name: 'Base64 Encode',
-    inputLabel: 'Text',
     outputLabel: 'Base64',
-    placeholder: 'hello lab',
-    sample: 'hello lab',
-    transform: encodeBase64,
+    inputs: [{ label: 'Text', placeholder: 'hello lab', sample: 'hello lab' }],
+    transform: ([value]) => encodeBase64(value),
   },
   {
     id: 'base64-decode',
     name: 'Base64 Decode',
-    inputLabel: 'Base64',
     outputLabel: 'Text',
-    placeholder: 'aGVsbG8gbGFi',
-    sample: 'aGVsbG8gbGFi',
-    transform: decodeBase64,
+    inputs: [{ label: 'Base64', placeholder: 'aGVsbG8gbGFi', sample: 'aGVsbG8gbGFi' }],
+    transform: ([value]) => decodeBase64(value),
   },
 ]

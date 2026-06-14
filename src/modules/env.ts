@@ -35,19 +35,27 @@ export const envModules: LabModule[] = [
   {
     id: 'env-to-json',
     name: 'ENV to JSON',
-    inputLabel: '.env',
     outputLabel: 'JSON',
-    placeholder: 'API_URL=https://example.com\nTOKEN=secret',
-    sample: 'API_URL=https://example.com\nTOKEN=secret',
-    transform: envToJson,
+    inputs: [
+      {
+        label: '.env',
+        placeholder: 'API_URL=https://example.com\nTOKEN=secret',
+        sample: 'API_URL=https://example.com\nTOKEN=secret',
+      },
+    ],
+    transform: ([value]) => envToJson(value),
   },
   {
     id: 'json-to-env',
     name: 'JSON to ENV',
-    inputLabel: 'JSON',
     outputLabel: '.env',
-    placeholder: '{\n  "API_URL": "https://example.com",\n  "TOKEN": "secret"\n}',
-    sample: '{\n  "API_URL": "https://example.com",\n  "TOKEN": "secret"\n}',
-    transform: jsonToEnv,
+    inputs: [
+      {
+        label: 'JSON',
+        placeholder: '{\n  "API_URL": "https://example.com",\n  "TOKEN": "secret"\n}',
+        sample: '{\n  "API_URL": "https://example.com",\n  "TOKEN": "secret"\n}',
+      },
+    ],
+    transform: ([value]) => jsonToEnv(value),
   },
 ]

@@ -8,19 +8,21 @@ export const jsonModules: LabModule[] = [
   {
     id: 'json-pretty',
     name: 'JSON Pretty',
-    inputLabel: 'JSON',
     outputLabel: 'Pretty JSON',
-    placeholder: '{"hello":"lab","count":2}',
-    sample: '{"hello":"lab","count":2}',
-    transform: prettyJson,
+    inputs: [{ label: 'JSON', placeholder: '{"hello":"lab","count":2}', sample: '{"hello":"lab","count":2}' }],
+    transform: ([value]) => prettyJson(value),
   },
   {
     id: 'json-minify',
     name: 'JSON Minify',
-    inputLabel: 'JSON',
     outputLabel: 'Minified JSON',
-    placeholder: '{\n  "hello": "lab",\n  "count": 2\n}',
-    sample: '{\n  "hello": "lab",\n  "count": 2\n}',
-    transform: minifyJson,
+    inputs: [
+      {
+        label: 'JSON',
+        placeholder: '{\n  "hello": "lab",\n  "count": 2\n}',
+        sample: '{\n  "hello": "lab",\n  "count": 2\n}',
+      },
+    ],
+    transform: ([value]) => minifyJson(value),
   },
 ]

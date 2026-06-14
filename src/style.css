@@ -12,6 +12,7 @@ body {
 }
 
 button,
+pre,
 textarea {
   font: inherit;
 }

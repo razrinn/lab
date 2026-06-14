@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decodeBase64, encodeBase64 } from './modules/base64.ts'
+import { diffPanels, diffText } from './modules/diff.ts'
 import { envToJson, jsonToEnv } from './modules/env.ts'
 import { modules } from './modules/index.ts'
 import { minifyJson, prettyJson } from './modules/json.ts'
@@ -13,6 +14,34 @@ describe('base64 transforms', () => {
 
   it('decodes values with surrounding whitespace', () => {
     expect(decodeBase64('\n aGVsbG8gbGFi \t')).toBe('hello lab')
+  })
+})
+
+describe('diff transforms', () => {
+  it('returns a line diff', () => {
+    expect(diffText(['same\nold\nlast', 'same\nnew\nlast'])).toBe(
+      '  same\n- old\n+ new\n  last',
+    )
+  })
+
+  it('reports equal text', () => {
+    expect(diffText(['same', 'same'])).toBe('No differences')
+  })
+
+  it('renders changed characters on both sides', () => {
+    const diff = diffPanels('old value', 'new value')
+
+    expect(diff.left).toContain('<mark')
+    expect(diff.left).toContain('>o</mark>')
+    expect(diff.right).toContain('<mark')
+    expect(diff.right).toContain('>n</mark>')
+  })
+
+  it('keeps matching lines aligned after a changed line', () => {
+    const diff = diffPanels('same\nold\nlast', 'same\nnew\nlast')
+
+    expect(diff.left.endsWith('\nlast')).toBe(true)
+    expect(diff.right.endsWith('\nlast')).toBe(true)
   })
 })
 
@@ -80,7 +109,7 @@ describe('module registry', () => {
     expect(new Set(modules.map((tool) => tool.id)).size).toBe(modules.length)
 
     for (const tool of modules) {
-      expect(tool.transform(tool.sample)).toEqual(expect.any(String))
+      expect(tool.transform(tool.inputs.map((input) => input.sample))).toEqual(expect.any(String))
     }
   })
 })
