@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
+    "coverage": "vp test run --coverage",
     "test": "vp test",
     "preview": "vp preview",
     "prepare": "vp config"
@@ -16,6 +17,8 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.40.2",
+    "@vitest/coverage-v8": "^4.1.8",
+    "happy-dom": "^20.10.3",
     "typescript": "~6.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",
