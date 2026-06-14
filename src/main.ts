@@ -11,6 +11,13 @@ app.innerHTML = `
       <h1 class="font-black text-[#d5defe] md:mb-1">lab.rzrn.dev</h1>
     </div>
     <nav class="tool-list grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-1.5 overflow-y-auto md:grid-cols-1" aria-label="Tools"></nav>
+    <details class="mt-3 rounded-md border border-[#3b4261] text-sm text-[#9aa5ce]">
+      <summary class="cursor-pointer px-3 py-2 font-black text-[#c0caf5]">Settings</summary>
+      <label class="flex gap-2 border-t border-[#3b4261] px-3 py-2">
+        <input id="wrap-lines" class="mt-1" type="checkbox" />
+        <span>Wrap long lines</span>
+      </label>
+    </details>
     <button id="copy" class="mt-3 rounded-md border border-[#7aa2f7]/60 px-3 py-2 text-left text-sm font-black text-[#7dcfff] hover:bg-[#7aa2f7]/10" type="button">
       Copy output
     </button>
@@ -40,11 +47,14 @@ const output = app.querySelector<HTMLTextAreaElement>('#output')!;
 const outputLabel = app.querySelector<HTMLElement>('#output-label')!;
 const action = app.querySelector<HTMLButtonElement>('#copy')!;
 const outputLines = app.querySelector<HTMLElement>('#output-lines')!;
+const wrapLines = app.querySelector<HTMLInputElement>('#wrap-lines')!;
 
 const selectedToolKey = 'lab:selected-tool';
+const wrapLinesKey = 'lab:wrap-lines';
 let active =
   modules.find((tool) => tool.id === localStorage.getItem(selectedToolKey)) ??
   modules[0];
+let shouldWrapLines = localStorage.getItem(wrapLinesKey) === 'true';
 let inputTextareas: HTMLTextAreaElement[] = [];
 let inputLineNumbers: HTMLElement[] = [];
 let diffEditors: HTMLElement[] = [];
@@ -68,10 +78,22 @@ const refreshDiffLines = () => {
   });
 };
 
+const setWrap = () => {
+  const editors = [...inputTextareas, output, ...diffEditors];
+  editors.forEach((editor) => {
+    editor.style.whiteSpace = shouldWrapLines ? 'pre-wrap' : 'pre';
+    editor.style.overflowWrap = shouldWrapLines ? 'break-word' : 'normal';
+    if (editor instanceof HTMLTextAreaElement) {
+      editor.wrap = shouldWrapLines ? 'soft' : 'off';
+    }
+  });
+};
+
 const renderInputs = () => {
   const multi = active.inputs.length > 1;
 
-  workspace.className = 'grid min-h-0 grid-rows-2 bg-[#3b4261] md:grid-cols-2 md:grid-rows-1';
+  workspace.className =
+    'grid min-h-0 grid-rows-2 bg-[#3b4261] md:grid-cols-2 md:grid-rows-1';
   inputPanel.className = `grid min-h-0 bg-[#16161e] md:border-r md:border-[#3b4261] ${multi ? 'grid-rows-2 md:grid-cols-2 md:grid-rows-1' : ''}`;
   outputSection.hidden = false;
   action.textContent = 'Copy output';
@@ -104,7 +126,10 @@ const renderInputs = () => {
   });
 
   output.readOnly = !active.reverseTransform;
-  output.placeholder = active.reverseTransform ? active.transform([active.inputs[0].placeholder]) : '';
+  output.placeholder = active.reverseTransform
+    ? active.transform([active.inputs[0].placeholder])
+    : '';
+  setWrap();
 };
 
 const renderDiffInputs = () => {
@@ -113,7 +138,8 @@ const renderDiffInputs = () => {
   action.textContent = 'Find diff';
   inputTextareas = [];
   inputLineNumbers = [];
-  inputPanel.className = 'grid min-h-0 grid-rows-2 bg-[#16161e] md:grid-cols-2 md:grid-rows-1';
+  inputPanel.className =
+    'grid min-h-0 grid-rows-2 bg-[#16161e] md:grid-cols-2 md:grid-rows-1';
   inputPanel.innerHTML = active.inputs
     .map(
       (input, index) => `
@@ -123,7 +149,7 @@ const renderDiffInputs = () => {
           </div>
           <div class="grid min-h-0 grid-cols-[auto_1fr]">
             <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
-            <pre class="diff-editor m-0 overflow-auto whitespace-pre-wrap break-words bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" contenteditable="true" spellcheck="false"></pre>
+            <pre class="diff-editor m-0 overflow-auto whitespace-pre-wrap wrap-break-word bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" contenteditable="true" spellcheck="false"></pre>
           </div>
         </section>
       `,
@@ -139,6 +165,7 @@ const renderDiffInputs = () => {
       diffLineNumbers[index].scrollTop = editor.scrollTop;
     });
   });
+  setWrap();
   refreshDiffLines();
 };
 
@@ -185,7 +212,8 @@ const runReverse = () => {
   try {
     inputTextareas[0].value = active.reverseTransform(output.value);
   } catch (error) {
-    inputTextareas[0].value = error instanceof Error ? error.message : 'Invalid input';
+    inputTextareas[0].value =
+      error instanceof Error ? error.message : 'Invalid input';
   }
 
   refreshLines();
@@ -214,6 +242,12 @@ output.addEventListener('scroll', () => {
   outputLines.scrollTop = output.scrollTop;
 });
 output.addEventListener('input', runReverse);
+wrapLines.checked = shouldWrapLines;
+wrapLines.addEventListener('change', () => {
+  shouldWrapLines = wrapLines.checked;
+  localStorage.setItem(wrapLinesKey, String(shouldWrapLines));
+  setWrap();
+});
 action.addEventListener('click', async () => {
   if (active.id === 'text-diff') {
     run();
