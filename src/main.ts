@@ -6,9 +6,8 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
 <main class="grid min-h-screen grid-cols-1 bg-[#1a1b26] text-[#c0caf5] md:grid-cols-[13rem_1fr]">
   <aside class="flex min-h-0 flex-col border-b border-[#3b4261] bg-[#16161e] p-3 md:border-r md:border-b-0">
-    <div class="mb-3 flex items-end justify-between gap-3 md:block">
+    <div class="mb-3">
       <h1 class="text-3xl font-black text-[#d5defe] md:mb-1">lab</h1>
-      <span id="status" class="text-xs font-black uppercase text-[#9ece6a]">ready</span>
     </div>
     <nav class="tool-list grid grid-cols-2 gap-1.5 md:grid-cols-1" aria-label="Tools"></nav>
     <button id="copy" class="mt-3 rounded-md border border-[#7aa2f7]/60 px-3 py-2 text-left text-sm font-black text-[#7dcfff] hover:bg-[#7aa2f7]/10" type="button">
@@ -45,7 +44,6 @@ const input = app.querySelector<HTMLTextAreaElement>('#input')!
 const output = app.querySelector<HTMLTextAreaElement>('#output')!
 const inputLabel = app.querySelector<HTMLElement>('#input-label')!
 const outputLabel = app.querySelector<HTMLElement>('#output-label')!
-const status = app.querySelector<HTMLElement>('#status')!
 const copy = app.querySelector<HTMLButtonElement>('#copy')!
 const inputLines = app.querySelector<HTMLElement>('#input-lines')!
 const outputLines = app.querySelector<HTMLElement>('#output-lines')!
@@ -82,12 +80,8 @@ const run = () => {
 
   try {
     output.value = active.transform(input.value)
-    status.textContent = 'ready'
-    status.className = 'text-xs font-black uppercase text-[#9ece6a]'
   } catch (error) {
-    output.value = ''
-    status.textContent = error instanceof Error ? error.message : 'Invalid input'
-    status.className = 'text-xs font-black uppercase text-[#f7768e]'
+    output.value = error instanceof Error ? error.message : 'Invalid input'
   }
 
   refreshLines()
@@ -115,8 +109,10 @@ output.addEventListener('scroll', () => {
 })
 copy.addEventListener('click', async () => {
   await navigator.clipboard.writeText(output.value)
-  status.textContent = 'copied'
-  status.className = 'text-xs font-black uppercase text-[#9ece6a]'
+  copy.textContent = 'Copied'
+  window.setTimeout(() => {
+    copy.textContent = 'Copy output'
+  }, 1000)
 })
 
 selectTool(active.id)
