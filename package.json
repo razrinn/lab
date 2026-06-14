@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "node --experimental-strip-types src/modules.test.ts",
+    "test": "vitest --run",
     "preview": "vite preview"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.40.2",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
+    "vitest": "^4.1.8",
     "wrangler": "^4.100.0"
   },
   "dependencies": {
