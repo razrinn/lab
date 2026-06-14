@@ -54,6 +54,7 @@ const moduleSettings = app.querySelector<HTMLElement>("#module-settings")!;
 const selectedToolKey = "lab:selected-tool";
 const wrapLinesKey = "lab:wrap-lines";
 const settingKey = (toolId: string, settingId: string) => `lab:${toolId}:${settingId}`;
+const inputKey = (toolId: string, index: number) => `lab:${toolId}:input:${index}`;
 let active =
   modules.find((tool) => tool.id === localStorage.getItem(selectedToolKey)) ?? modules[0];
 let shouldWrapLines = localStorage.getItem(wrapLinesKey) === "true";
@@ -204,8 +205,11 @@ const renderInputs = () => {
 
   inputTextareas.forEach((input, index) => {
     input.placeholder = active.inputs[index].placeholder;
-    input.value = active.inputs[index].sample;
-    input.addEventListener("input", run);
+    input.value = sessionStorage.getItem(inputKey(active.id, index)) ?? active.inputs[index].sample;
+    input.addEventListener("input", () => {
+      sessionStorage.setItem(inputKey(active.id, index), input.value);
+      run();
+    });
     input.addEventListener("scroll", () => {
       inputLineNumbers[index].scrollTop = input.scrollTop;
     });
@@ -245,7 +249,8 @@ const renderDiffInputs = () => {
   diffLineNumbers = Array.from(inputPanel.querySelectorAll(".line-numbers"));
   diffScrolls = Array.from(inputPanel.querySelectorAll(".diff-scroll"));
   diffEditors.forEach((editor, index) => {
-    editor.textContent = active.inputs[index].sample;
+    editor.textContent =
+      sessionStorage.getItem(inputKey(active.id, index)) ?? active.inputs[index].sample;
     saveDiffEditorText(editor);
     editor.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
@@ -253,10 +258,12 @@ const renderDiffInputs = () => {
       event.preventDefault();
       insertTextAtCursor(`\n${caretAnchor}`);
       saveDiffEditorText(editor);
+      sessionStorage.setItem(inputKey(active.id, index), diffEditorText(editor));
       refreshDiffLines();
     });
     editor.addEventListener("input", () => {
       saveDiffEditorText(editor);
+      sessionStorage.setItem(inputKey(active.id, index), diffEditorText(editor));
       refreshDiffLines();
     });
     editor.addEventListener("click", () => {
@@ -356,6 +363,7 @@ const runReverse = () => {
     inputTextareas[0].value = error instanceof Error ? error.message : "Invalid input";
   }
 
+  sessionStorage.setItem(inputKey(active.id, 0), inputTextareas[0].value);
   refreshLines();
 };
 

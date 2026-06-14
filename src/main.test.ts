@@ -8,12 +8,19 @@ const mount = async () => {
   vi.resetModules();
   document.body.innerHTML = '<div id="app"></div>';
   localStorage.clear();
+  sessionStorage.clear();
   writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
     value: { writeText },
   });
 
+  await import("./main.ts");
+};
+
+const reload = async () => {
+  vi.resetModules();
+  document.body.innerHTML = '<div id="app"></div>';
   await import("./main.ts");
 };
 
@@ -54,6 +61,16 @@ describe("app integration", () => {
     change(output(), "aGVsbG8=");
 
     expect(input().value).toBe("hello");
+  });
+
+  it("restores input fields from session storage", async () => {
+    await mount();
+
+    change(input(), "same tab");
+    await reload();
+
+    expect(input().value).toBe("same tab");
+    expect(output().value).toBe("c2FtZSB0YWI=");
   });
 
   it("copies output", async () => {
@@ -98,6 +115,7 @@ interface User {
 
   it("restores selected tool and module settings", async () => {
     localStorage.clear();
+    sessionStorage.clear();
     localStorage.setItem("lab:selected-tool", "json-ts");
     localStorage.setItem("lab:json-ts:rootName", "Saved Root");
     localStorage.setItem("lab:json-ts:arrayStyle", "generic");
