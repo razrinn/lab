@@ -1,13 +1,13 @@
-import './style.css'
-import { modules } from './modules'
+import './style.css';
+import { modules } from './modules';
 
-const app = document.querySelector<HTMLDivElement>('#app')!
+const app = document.querySelector<HTMLDivElement>('#app')!;
 
 app.innerHTML = `
 <main class="grid min-h-screen grid-cols-1 bg-[#1a1b26] text-[#c0caf5] md:grid-cols-[13rem_1fr]">
   <aside class="flex min-h-0 flex-col border-b border-[#3b4261] bg-[#16161e] p-3 md:border-r md:border-b-0">
     <div class="mb-3">
-      <h1 class="text-3xl font-black text-[#d5defe] md:mb-1">lab</h1>
+      <h1 class="font-black text-[#d5defe] md:mb-1">lab.rzrn.dev</h1>
     </div>
     <nav class="tool-list grid grid-cols-2 gap-1.5 md:grid-cols-1" aria-label="Tools"></nav>
     <button id="copy" class="mt-3 rounded-md border border-[#7aa2f7]/60 px-3 py-2 text-left text-sm font-black text-[#7dcfff] hover:bg-[#7aa2f7]/10" type="button">
@@ -37,26 +37,31 @@ app.innerHTML = `
     </section>
   </section>
 </main>
-`
+`;
 
-const toolList = app.querySelector<HTMLElement>('.tool-list')!
-const input = app.querySelector<HTMLTextAreaElement>('#input')!
-const output = app.querySelector<HTMLTextAreaElement>('#output')!
-const inputLabel = app.querySelector<HTMLElement>('#input-label')!
-const outputLabel = app.querySelector<HTMLElement>('#output-label')!
-const copy = app.querySelector<HTMLButtonElement>('#copy')!
-const inputLines = app.querySelector<HTMLElement>('#input-lines')!
-const outputLines = app.querySelector<HTMLElement>('#output-lines')!
+const toolList = app.querySelector<HTMLElement>('.tool-list')!;
+const input = app.querySelector<HTMLTextAreaElement>('#input')!;
+const output = app.querySelector<HTMLTextAreaElement>('#output')!;
+const inputLabel = app.querySelector<HTMLElement>('#input-label')!;
+const outputLabel = app.querySelector<HTMLElement>('#output-label')!;
+const copy = app.querySelector<HTMLButtonElement>('#copy')!;
+const inputLines = app.querySelector<HTMLElement>('#input-lines')!;
+const outputLines = app.querySelector<HTMLElement>('#output-lines')!;
 
-let active = modules[0]
+const selectedToolKey = 'lab:selected-tool';
+let active =
+  modules.find((tool) => tool.id === localStorage.getItem(selectedToolKey)) ??
+  modules[0];
 
 const lineNumbers = (value: string) =>
-  Array.from({ length: value.split('\n').length }, (_, index) => String(index + 1)).join('\n')
+  Array.from({ length: value.split('\n').length }, (_, index) =>
+    String(index + 1),
+  ).join('\n');
 
 const refreshLines = () => {
-  inputLines.textContent = lineNumbers(input.value)
-  outputLines.textContent = lineNumbers(output.value)
-}
+  inputLines.textContent = lineNumbers(input.value);
+  outputLines.textContent = lineNumbers(output.value);
+};
 
 const renderTools = () => {
   toolList.innerHTML = modules
@@ -71,48 +76,51 @@ const renderTools = () => {
         </button>
       `,
     )
-    .join('')
-}
+    .join('');
+};
 
 const run = () => {
-  inputLabel.textContent = active.inputLabel
-  outputLabel.textContent = active.outputLabel
+  inputLabel.textContent = active.inputLabel;
+  outputLabel.textContent = active.outputLabel;
 
   try {
-    output.value = active.transform(input.value)
+    output.value = active.transform(input.value);
   } catch (error) {
-    output.value = error instanceof Error ? error.message : 'Invalid input'
+    output.value = error instanceof Error ? error.message : 'Invalid input';
   }
 
-  refreshLines()
-}
+  refreshLines();
+};
 
 const selectTool = (id: string) => {
-  active = modules.find((tool) => tool.id === id) ?? modules[0]
-  input.placeholder = active.placeholder
-  input.value = active.sample
-  renderTools()
-  run()
-}
+  active = modules.find((tool) => tool.id === id) ?? modules[0];
+  localStorage.setItem(selectedToolKey, active.id);
+  input.placeholder = active.placeholder;
+  input.value = active.sample;
+  renderTools();
+  run();
+};
 
 toolList.addEventListener('click', (event) => {
-  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-tool]')
-  if (button) selectTool(button.dataset.tool!)
-})
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+    '[data-tool]',
+  );
+  if (button) selectTool(button.dataset.tool!);
+});
 
-input.addEventListener('input', run)
+input.addEventListener('input', run);
 input.addEventListener('scroll', () => {
-  inputLines.scrollTop = input.scrollTop
-})
+  inputLines.scrollTop = input.scrollTop;
+});
 output.addEventListener('scroll', () => {
-  outputLines.scrollTop = output.scrollTop
-})
+  outputLines.scrollTop = output.scrollTop;
+});
 copy.addEventListener('click', async () => {
-  await navigator.clipboard.writeText(output.value)
-  copy.textContent = 'Copied'
+  await navigator.clipboard.writeText(output.value);
+  copy.textContent = 'Copied';
   window.setTimeout(() => {
-    copy.textContent = 'Copy output'
-  }, 1000)
-})
+    copy.textContent = 'Copy output';
+  }, 1000);
+});
 
-selectTool(active.id)
+selectTool(active.id);
