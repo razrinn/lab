@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { decodeBase64, encodeBase64 } from './modules/base64.ts'
 import { envToJson, jsonToEnv } from './modules/env.ts'
 import { modules } from './modules/index.ts'
+import { minifyJson, prettyJson } from './modules/json.ts'
 
 describe('base64 transforms', () => {
   it('round-trips unicode text', () => {
@@ -52,6 +53,25 @@ describe('env transforms', () => {
 
   it('throws for invalid JSON', () => {
     expect(() => jsonToEnv('{nope')).toThrow()
+  })
+})
+
+describe('json transforms', () => {
+  it('pretties JSON', () => {
+    expect(prettyJson('{"hello":"lab","count":2}')).toBe(
+      '{\n  "hello": "lab",\n  "count": 2\n}',
+    )
+  })
+
+  it('minifies JSON', () => {
+    expect(minifyJson('{\n  "hello": "lab",\n  "count": 2\n}')).toBe(
+      '{"hello":"lab","count":2}',
+    )
+  })
+
+  it('throws for invalid JSON', () => {
+    expect(() => prettyJson('{nope')).toThrow()
+    expect(() => minifyJson('{nope')).toThrow()
   })
 })
 
