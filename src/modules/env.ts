@@ -1,49 +1,49 @@
-import type { LabModule } from './types'
+import type { LabModule } from "./types";
 
 export const envToJson = (value: string) => {
-  const result: Record<string, string> = {}
+  const result: Record<string, string> = {};
 
   for (const rawLine of value.split(/\r?\n/)) {
-    const line = rawLine.trim()
-    if (!line || line.startsWith('#')) continue
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
 
-    const cleanLine = line.startsWith('export ') ? line.slice(7).trim() : line
-    const equalsAt = cleanLine.indexOf('=')
-    if (equalsAt < 1) continue
+    const cleanLine = line.startsWith("export ") ? line.slice(7).trim() : line;
+    const equalsAt = cleanLine.indexOf("=");
+    if (equalsAt < 1) continue;
 
-    const key = cleanLine.slice(0, equalsAt).trim()
-    let val = cleanLine.slice(equalsAt + 1).trim()
+    const key = cleanLine.slice(0, equalsAt).trim();
+    let val = cleanLine.slice(equalsAt + 1).trim();
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1)
+      val = val.slice(1, -1);
     }
 
-    result[key] = val
+    result[key] = val;
   }
 
-  return JSON.stringify(result, null, 2)
-}
+  return JSON.stringify(result, null, 2);
+};
 
 export const jsonToEnv = (value: string) => {
-  const data = JSON.parse(value) as Record<string, unknown>
+  const data = JSON.parse(value) as Record<string, unknown>;
 
   return Object.entries(data)
     .map(([key, val]) => `${key}=${String(val)}`)
-    .join('\n')
-}
+    .join("\n");
+};
 
 export const envModules: LabModule[] = [
   {
-    id: 'env-json',
-    name: 'ENV JSON',
-    outputLabel: 'JSON',
+    id: "env-json",
+    name: "ENV JSON",
+    outputLabel: "JSON",
     inputs: [
       {
-        label: '.env',
-        placeholder: 'API_URL=https://example.com\nTOKEN=secret',
-        sample: 'API_URL=https://example.com\nTOKEN=secret',
+        label: ".env",
+        placeholder: "API_URL=https://example.com\nTOKEN=secret",
+        sample: "API_URL=https://example.com\nTOKEN=secret",
       },
     ],
     transform: ([value]) => envToJson(value),
     reverseTransform: jsonToEnv,
   },
-]
+];
