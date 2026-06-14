@@ -4,33 +4,36 @@ import { modules } from './modules'
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 app.innerHTML = `
-<main class="lab-shell">
-  <header class="topbar">
-    <div class="brand">
-      <span>lab</span>
-      <strong id="active-tool"></strong>
+<main class="grid min-h-screen grid-cols-1 bg-[#1a1b26] text-[#c0caf5] md:grid-cols-[13rem_1fr]">
+  <aside class="flex min-h-0 flex-col border-b border-[#3b4261] bg-[#16161e] p-3 md:border-r md:border-b-0">
+    <div class="mb-3 flex items-end justify-between gap-3 md:block">
+      <h1 class="text-3xl font-black text-[#d5defe] md:mb-1">lab</h1>
+      <span id="status" class="text-xs font-black uppercase text-[#9ece6a]">ready</span>
     </div>
-    <nav class="tool-list" aria-label="Tools"></nav>
-    <div class="actions">
-      <span id="status"></span>
-      <button id="copy" type="button">Copy</button>
-    </div>
-  </header>
+    <nav class="tool-list grid grid-cols-2 gap-1.5 md:grid-cols-1" aria-label="Tools"></nav>
+    <button id="copy" class="mt-3 rounded-md border border-[#7aa2f7]/60 px-3 py-2 text-left text-sm font-black text-[#7dcfff] hover:bg-[#7aa2f7]/10" type="button">
+      Copy output
+    </button>
+  </aside>
 
-  <section class="workspace">
-    <section class="editor-panel">
-      <div class="panel-head"><span id="input-label"></span></div>
-      <div class="editor">
-        <pre class="line-numbers" id="input-lines" aria-hidden="true">1</pre>
-        <textarea id="input" spellcheck="false" autocomplete="off" wrap="off"></textarea>
+  <section class="grid min-h-0 grid-rows-2 bg-[#3b4261] md:grid-cols-2 md:grid-rows-1">
+    <section class="grid min-h-0 grid-rows-[auto_1fr] bg-[#16161e] md:border-r md:border-[#3b4261]">
+      <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
+        <span id="input-label"></span>
+      </div>
+      <div class="grid min-h-0 grid-cols-[auto_1fr]">
+        <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" id="input-lines" aria-hidden="true">1</pre>
+        <textarea id="input" class="min-w-0 resize-none overflow-auto bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none placeholder:text-[#565f89]" spellcheck="false" autocomplete="off" wrap="off"></textarea>
       </div>
     </section>
 
-    <section class="editor-panel">
-      <div class="panel-head"><span id="output-label"></span></div>
-      <div class="editor">
-        <pre class="line-numbers" id="output-lines" aria-hidden="true">1</pre>
-        <textarea id="output" spellcheck="false" readonly wrap="off"></textarea>
+    <section class="grid min-h-0 grid-rows-[auto_1fr] bg-[#16161e]">
+      <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
+        <span id="output-label"></span>
+      </div>
+      <div class="grid min-h-0 grid-cols-[auto_1fr]">
+        <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" id="output-lines" aria-hidden="true">1</pre>
+        <textarea id="output" class="min-w-0 resize-none overflow-auto bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" spellcheck="false" readonly wrap="off"></textarea>
       </div>
     </section>
   </section>
@@ -42,7 +45,6 @@ const input = app.querySelector<HTMLTextAreaElement>('#input')!
 const output = app.querySelector<HTMLTextAreaElement>('#output')!
 const inputLabel = app.querySelector<HTMLElement>('#input-label')!
 const outputLabel = app.querySelector<HTMLElement>('#output-label')!
-const activeTool = app.querySelector<HTMLElement>('#active-tool')!
 const status = app.querySelector<HTMLElement>('#status')!
 const copy = app.querySelector<HTMLButtonElement>('#copy')!
 const inputLines = app.querySelector<HTMLElement>('#input-lines')!
@@ -62,7 +64,11 @@ const renderTools = () => {
   toolList.innerHTML = modules
     .map(
       (tool) => `
-        <button class="tool ${tool.id === active.id ? 'active' : ''}" type="button" data-tool="${tool.id}">
+        <button
+          class="rounded-md px-3 py-2 text-left text-sm font-black ${tool.id === active.id ? 'bg-[#7aa2f7] text-[#101014]' : 'text-[#9aa5ce] hover:bg-[#292e42]'}"
+          type="button"
+          data-tool="${tool.id}"
+        >
           ${tool.name}
         </button>
       `,
@@ -71,18 +77,17 @@ const renderTools = () => {
 }
 
 const run = () => {
-  activeTool.textContent = active.name
   inputLabel.textContent = active.inputLabel
   outputLabel.textContent = active.outputLabel
 
   try {
     output.value = active.transform(input.value)
     status.textContent = 'ready'
-    status.className = 'ok'
+    status.className = 'text-xs font-black uppercase text-[#9ece6a]'
   } catch (error) {
     output.value = ''
     status.textContent = error instanceof Error ? error.message : 'Invalid input'
-    status.className = 'bad'
+    status.className = 'text-xs font-black uppercase text-[#f7768e]'
   }
 
   refreshLines()
@@ -111,7 +116,7 @@ output.addEventListener('scroll', () => {
 copy.addEventListener('click', async () => {
   await navigator.clipboard.writeText(output.value)
   status.textContent = 'copied'
-  status.className = 'ok'
+  status.className = 'text-xs font-black uppercase text-[#9ece6a]'
 })
 
 selectTool(active.id)
