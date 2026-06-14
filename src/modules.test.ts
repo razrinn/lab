@@ -105,11 +105,21 @@ describe('json transforms', () => {
 })
 
 describe('module registry', () => {
+  it('combines paired transforms into reversible tools', () => {
+    expect(modules.map((tool) => tool.id)).toEqual(['base64', 'text-diff', 'env-json', 'json'])
+    expect(modules.filter((tool) => tool.reverseTransform).map((tool) => tool.id)).toEqual([
+      'base64',
+      'env-json',
+      'json',
+    ])
+  })
+
   it('has unique ids and working samples', () => {
     expect(new Set(modules.map((tool) => tool.id)).size).toBe(modules.length)
 
     for (const tool of modules) {
       expect(tool.transform(tool.inputs.map((input) => input.sample))).toEqual(expect.any(String))
+      if (tool.reverseTransform) expect(tool.reverseTransform(tool.transform(tool.inputs.map((input) => input.sample)))).toEqual(expect.any(String))
     }
   })
 })

@@ -102,6 +102,9 @@ const renderInputs = () => {
       inputLineNumbers[index].scrollTop = input.scrollTop;
     });
   });
+
+  output.readOnly = !active.reverseTransform;
+  output.placeholder = active.reverseTransform ? active.transform([active.inputs[0].placeholder]) : '';
 };
 
 const renderDiffInputs = () => {
@@ -165,11 +168,24 @@ const run = () => {
   }
 
   outputLabel.textContent = active.outputLabel;
+  output.readOnly = !active.reverseTransform;
 
   try {
     output.value = active.transform(inputTextareas.map((input) => input.value));
   } catch (error) {
     output.value = error instanceof Error ? error.message : 'Invalid input';
+  }
+
+  refreshLines();
+};
+
+const runReverse = () => {
+  if (!active.reverseTransform || active.id === 'text-diff') return;
+
+  try {
+    inputTextareas[0].value = active.reverseTransform(output.value);
+  } catch (error) {
+    inputTextareas[0].value = error instanceof Error ? error.message : 'Invalid input';
   }
 
   refreshLines();
@@ -197,6 +213,7 @@ toolList.addEventListener('click', (event) => {
 output.addEventListener('scroll', () => {
   outputLines.scrollTop = output.scrollTop;
 });
+output.addEventListener('input', runReverse);
 action.addEventListener('click', async () => {
   if (active.id === 'text-diff') {
     run();

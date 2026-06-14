@@ -11,17 +11,11 @@ export const decodeBase64 = (value: string) =>
 
 export const base64Modules: LabModule[] = [
   {
-    id: 'base64-encode',
-    name: 'Base64 Encode',
+    id: 'base64',
+    name: 'Base64',
     outputLabel: 'Base64',
     inputs: [{ label: 'Text', placeholder: 'hello lab', sample: 'hello lab' }],
     transform: ([value]) => encodeBase64(value),
-  },
-  {
-    id: 'base64-decode',
-    name: 'Base64 Decode',
-    outputLabel: 'Text',
-    inputs: [{ label: 'Base64', placeholder: 'aGVsbG8gbGFi', sample: 'aGVsbG8gbGFi' }],
-    transform: ([value]) => decodeBase64(value),
+    reverseTransform: decodeBase64,
   },
 ]

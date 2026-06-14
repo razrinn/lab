@@ -33,8 +33,8 @@ export const jsonToEnv = (value: string) => {
 
 export const envModules: LabModule[] = [
   {
-    id: 'env-to-json',
-    name: 'ENV to JSON',
+    id: 'env-json',
+    name: 'ENV JSON',
     outputLabel: 'JSON',
     inputs: [
       {
@@ -44,18 +44,6 @@ export const envModules: LabModule[] = [
       },
     ],
     transform: ([value]) => envToJson(value),
-  },
-  {
-    id: 'json-to-env',
-    name: 'JSON to ENV',
-    outputLabel: '.env',
-    inputs: [
-      {
-        label: 'JSON',
-        placeholder: '{\n  "API_URL": "https://example.com",\n  "TOKEN": "secret"\n}',
-        sample: '{\n  "API_URL": "https://example.com",\n  "TOKEN": "secret"\n}',
-      },
-    ],
-    transform: ([value]) => jsonToEnv(value),
+    reverseTransform: jsonToEnv,
   },
 ]

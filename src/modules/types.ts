@@ -10,4 +10,5 @@ export type LabModule = {
   outputLabel: string
   inputs: LabModuleInput[]
   transform: (values: string[]) => string
+  reverseTransform?: (value: string) => string
 }
