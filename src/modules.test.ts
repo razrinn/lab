@@ -4,7 +4,7 @@ import { diffPanels, diffText } from "./modules/diff.ts";
 import { envToJson, jsonToEnv } from "./modules/env.ts";
 import { modules } from "./modules/index.ts";
 import { jsonToTypescript } from "./modules/json-to-ts.ts";
-import { minifyJson, prettyJson } from "./modules/json.ts";
+import { minifyJson, parseEscapedJson, prettyJson } from "./modules/json.ts";
 
 describe("base64 transforms", () => {
   it("encodes plain text", () => {
@@ -175,6 +175,16 @@ describe("json transforms", () => {
     expect(() => prettyJson("{nope")).toThrow();
     expect(() => minifyJson("{nope")).toThrow();
   });
+
+  it("parses escaped JSON", () => {
+    expect(parseEscapedJson('{\\"hello\\":\\"lab\\",\\"count\\":2}')).toBe(
+      '{\n  "hello": "lab",\n  "count": 2\n}',
+    );
+  });
+
+  it("parses JSON string literals", () => {
+    expect(parseEscapedJson('"{\\"hello\\":\\"lab\\"}"')).toBe('{\n  "hello": "lab"\n}');
+  });
 });
 
 describe("json to typescript transform", () => {
@@ -269,6 +279,7 @@ describe("module registry", () => {
       "text-diff",
       "env-json",
       "json",
+      "json-parse",
       "json-ts",
     ]);
     expect(modules.filter((tool) => tool.reverseTransform).map((tool) => tool.id)).toEqual([
