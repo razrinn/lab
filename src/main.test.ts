@@ -142,6 +142,9 @@ describe("app integration", () => {
 interface User {
   id: number;
 }`);
+    expect(document.querySelector<HTMLElement>("#output-highlight")!.innerHTML).toContain(
+      'syntax-keyword">interface',
+    );
   });
 
   it("restores selected tool and module settings", async () => {

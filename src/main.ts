@@ -33,7 +33,10 @@ app.innerHTML = `
       </div>
       <div class="grid min-h-0 grid-cols-[auto_1fr]">
         <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-1.5 py-2 text-right text-sm leading-7 text-[#565f89] select-none" id="output-lines" aria-hidden="true">1</pre>
-        <textarea id="output" class="min-w-0 resize-none overflow-auto bg-transparent p-2 text-sm leading-7 text-[#c0caf5] outline-none" spellcheck="false" readonly wrap="off"></textarea>
+        <div class="grid min-w-0 min-h-0">
+          <textarea id="output" class="col-start-1 row-start-1 min-w-0 resize-none overflow-auto bg-transparent p-2 text-sm leading-7 text-[#c0caf5] outline-none" spellcheck="false" readonly wrap="off"></textarea>
+          <pre id="output-highlight" class="col-start-1 row-start-1 m-0 hidden min-w-0 overflow-auto bg-transparent p-2 text-sm leading-7 text-[#c0caf5] outline-none" aria-hidden="true"></pre>
+        </div>
       </div>
     </section>
   </section>
@@ -45,6 +48,7 @@ const workspace = app.querySelector<HTMLElement>("#workspace")!;
 const inputPanel = app.querySelector<HTMLElement>("#input-panel")!;
 const outputSection = app.querySelector<HTMLElement>("#output-section")!;
 const output = app.querySelector<HTMLTextAreaElement>("#output")!;
+const outputHighlight = app.querySelector<HTMLElement>("#output-highlight")!;
 const outputLabel = app.querySelector<HTMLElement>("#output-label")!;
 const action = app.querySelector<HTMLButtonElement>("#copy")!;
 const outputLines = app.querySelector<HTMLElement>("#output-lines")!;
@@ -64,6 +68,33 @@ let diffEditors: HTMLElement[] = [];
 let diffLineNumbers: HTMLElement[] = [];
 let diffScrolls: HTMLElement[] = [];
 let syncingDiffScroll = false;
+
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+
+const highlightTypescript = (value: string) => {
+  const token =
+    /\/\/.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:Array|Record|boolean|extends|false|interface|null|number|readonly|string|true|type|unknown)\b/g;
+  let html = "";
+  let cursor = 0;
+
+  for (const match of value.matchAll(token)) {
+    const word = match[0];
+    const index = match.index;
+    html += escapeHtml(value.slice(cursor, index));
+    const kind = word.startsWith("/") ? "comment" : /^[`'"]/.test(word) ? "string" : "keyword";
+    html += `<span class="syntax-${kind}">${escapeHtml(word)}</span>`;
+    cursor = index + word.length;
+  }
+
+  return html + escapeHtml(value.slice(cursor));
+};
+
+const outputEditor = () => (outputHighlight.hidden ? output : outputHighlight);
 
 const currentSettings = () =>
   Object.fromEntries(
@@ -149,7 +180,7 @@ const refreshLines = () => {
   inputTextareas.forEach((input, index) => {
     inputLineNumbers[index].textContent = lineNumbersFor(input, input.value);
   });
-  outputLines.textContent = lineNumbersFor(output, output.value);
+  outputLines.textContent = lineNumbersFor(outputEditor(), output.value);
 };
 
 const refreshDiffLines = () => {
@@ -173,7 +204,7 @@ const insertTextAtCursor = (text: string) => {
 };
 
 const setWrap = () => {
-  const editors = [...inputTextareas, output, ...diffEditors];
+  const editors = [...inputTextareas, output, outputHighlight, ...diffEditors];
   editors.forEach((editor) => {
     editor.style.whiteSpace = shouldWrapLines ? "pre-wrap" : "pre";
     editor.style.overflowWrap = shouldWrapLines ? "break-word" : "normal";
@@ -222,6 +253,9 @@ const renderInputs = () => {
   });
 
   output.readOnly = !active.reverseTransform;
+  output.hidden = false;
+  outputHighlight.hidden = true;
+  outputHighlight.classList.add("hidden");
   output.placeholder = active.reverseTransform
     ? active.transform([active.inputs[0].placeholder])
     : "";
@@ -357,6 +391,12 @@ const run = () => {
     output.value = error instanceof Error ? error.message : "Invalid input";
   }
 
+  const highlighted = active.id === "json-ts";
+  output.hidden = highlighted;
+  outputHighlight.hidden = !highlighted;
+  outputHighlight.classList.toggle("hidden", !highlighted);
+  outputHighlight.innerHTML = highlighted ? highlightTypescript(output.value) : "";
+
   refreshLines();
 };
 
@@ -393,6 +433,9 @@ toolList.addEventListener("click", (event) => {
 
 output.addEventListener("scroll", () => {
   outputLines.scrollTop = output.scrollTop;
+});
+outputHighlight.addEventListener("scroll", () => {
+  outputLines.scrollTop = outputHighlight.scrollTop;
 });
 output.addEventListener("input", runReverse);
 wrapLines.checked = shouldWrapLines;

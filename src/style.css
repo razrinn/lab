@@ -21,6 +21,18 @@ textarea {
   white-space: pre;
 }
 
+.syntax-comment {
+  color: #565f89;
+}
+
+.syntax-keyword {
+  color: #bb9af7;
+}
+
+.syntax-string {
+  color: #9ece6a;
+}
+
 .diff-line-added,
 .diff-line-removed {
   display: inline-block;
