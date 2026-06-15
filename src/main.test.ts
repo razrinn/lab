@@ -186,4 +186,21 @@ interface User {
     expect(editors[0].innerHTML).toContain("diff-line-removed");
     expect(editors[1].innerHTML).toContain("diff-line-added");
   });
+
+  it("keeps contenteditable diff lines from pasted html", async () => {
+    await mount();
+    clickTool("text-diff");
+
+    const editors = Array.from(document.querySelectorAll<HTMLElement>(".diff-editor"));
+    editors[0].innerHTML = "<div>same</div><div>old</div>";
+    editors[0].dispatchEvent(new Event("input", { bubbles: true }));
+    editors[1].innerHTML = "<div>same</div><div>new</div>";
+    editors[1].dispatchEvent(new Event("input", { bubbles: true }));
+
+    document.querySelector<HTMLButtonElement>("#copy")!.click();
+
+    expect(editors[0].innerHTML).toContain("same\n");
+    expect(editors[0].innerHTML).toContain("diff-line-removed");
+    expect(editors[1].innerHTML).toContain("diff-line-added");
+  });
 });

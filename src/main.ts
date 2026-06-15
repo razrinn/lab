@@ -142,8 +142,28 @@ const lineNumbersFor = (editor: HTMLElement, text: string) => {
 };
 
 const caretAnchor = "\u200b";
-const diffEditorDomText = (editor: HTMLElement) =>
-  (editor.textContent ?? "").replaceAll(caretAnchor, "");
+const diffEditorDomText = (editor: HTMLElement) => {
+  let text = "";
+
+  const read = (node: Node) => {
+    if (node instanceof Text) {
+      text += node.data;
+      return;
+    }
+    if (!(node instanceof HTMLElement)) return;
+    if (node.tagName === "BR") {
+      text += "\n";
+      return;
+    }
+    if (node !== editor && ["DIV", "P"].includes(node.tagName) && text && !text.endsWith("\n")) {
+      text += "\n";
+    }
+    node.childNodes.forEach(read);
+  };
+
+  read(editor);
+  return text.replaceAll(caretAnchor, "");
+};
 const diffEditorText = (editor: HTMLElement) => editor.dataset.text ?? diffEditorDomText(editor);
 const saveDiffEditorText = (editor: HTMLElement) => {
   editor.dataset.text = diffEditorDomText(editor);
