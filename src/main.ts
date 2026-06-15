@@ -5,21 +5,21 @@ import { diffPanels } from "./modules/diff";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 app.innerHTML = `
-<main class="grid h-dvh grid-rows-[minmax(0,16rem)_1fr] overflow-hidden bg-[#1a1b26] text-[#c0caf5] md:grid-cols-[13rem_1fr] md:grid-rows-1">
-  <aside class="flex min-h-0 flex-col border-b border-[#3b4261] bg-[#16161e] p-3 md:border-r md:border-b-0">
-    <div class="mb-3">
-      <h1 class="font-black text-[#d5defe] md:mb-1">lab.rzrn.dev</h1>
+<main class="grid h-dvh grid-rows-[minmax(0,9rem)_1fr] overflow-hidden bg-[#1a1b26] text-[#c0caf5] md:grid-cols-[11rem_1fr] md:grid-rows-1">
+  <aside class="flex min-h-0 flex-col border-b border-[#3b4261] bg-[#16161e] p-1.5 md:border-r md:border-b-0">
+    <div class="mb-1.5">
+      <h1 class="text-[10px] font-black text-[#d5defe]">lab.rzrn.dev</h1>
     </div>
-    <nav class="tool-list grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-1.5 overflow-y-auto md:grid-cols-1" aria-label="Tools"></nav>
-    <details class="mt-3 rounded-md border border-[#3b4261] text-sm text-[#9aa5ce]">
-      <summary class="cursor-pointer px-3 py-2 font-black text-[#c0caf5]">Settings</summary>
-      <label class="flex gap-2 border-t border-[#3b4261] px-3 py-2">
-        <input id="wrap-lines" class="mt-1" type="checkbox" />
+    <nav class="tool-list grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-1 overflow-y-auto md:grid-cols-1" aria-label="Tools"></nav>
+    <details class="mt-1.5 rounded border border-[#3b4261] text-[9px] text-[#9aa5ce]">
+      <summary class="cursor-pointer px-1.5 py-1 font-black text-[#c0caf5]">Settings</summary>
+      <label class="flex gap-1.5 border-t border-[#3b4261] px-1.5 py-1">
+        <input id="wrap-lines" type="checkbox" />
         <span>Wrap long lines</span>
       </label>
       <div id="module-settings"></div>
     </details>
-    <button id="copy" class="mt-3 rounded-md border border-[#7aa2f7]/60 px-3 py-2 text-left text-sm font-black text-[#7dcfff] hover:bg-[#7aa2f7]/10" type="button">
+    <button id="copy" class="mt-1.5 rounded border border-[#7aa2f7]/60 px-1.5 py-1 text-left text-[9px] font-black text-[#7dcfff] hover:bg-[#7aa2f7]/10" type="button">
       Copy output
     </button>
   </aside>
@@ -28,12 +28,12 @@ app.innerHTML = `
     <section class="grid min-h-0 bg-[#16161e] md:border-r md:border-[#3b4261]" id="input-panel"></section>
 
     <section class="grid min-h-0 grid-rows-[auto_1fr] bg-[#16161e]" id="output-section">
-      <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
+      <div class="border-b border-[#292e42] px-2 py-1.5 text-[9px] font-black uppercase text-[#7aa2f7]">
         <span id="output-label"></span>
       </div>
       <div class="grid min-h-0 grid-cols-[auto_1fr]">
-        <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" id="output-lines" aria-hidden="true">1</pre>
-        <textarea id="output" class="min-w-0 resize-none overflow-auto bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" spellcheck="false" readonly wrap="off"></textarea>
+        <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-1.5 py-2 text-right text-sm leading-7 text-[#565f89] select-none" id="output-lines" aria-hidden="true">1</pre>
+        <textarea id="output" class="min-w-0 resize-none overflow-auto bg-transparent p-2 text-sm leading-7 text-[#c0caf5] outline-none" spellcheck="false" readonly wrap="off"></textarea>
       </div>
     </section>
   </section>
@@ -77,23 +77,29 @@ const currentSettings = () =>
     ),
   );
 
-const lineNumbers = (value: string) =>
+const rawLineNumbers = (value: string) =>
   Array.from({ length: value.split("\n").length }, (_, index) => String(index + 1)).join("\n");
 
-const diffLineNumbersFor = (editor: HTMLElement) => {
-  const text = diffEditorText(editor);
-  if (!shouldWrapLines) return lineNumbers(text);
+const lineNumbersFor = (editor: HTMLElement, text: string) => {
+  if (!shouldWrapLines) return rawLineNumbers(text);
 
   const style = getComputedStyle(editor);
-  const width = editor.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const paddingRight = parseFloat(style.paddingRight) || 0;
+  const width = editor.clientWidth - paddingLeft - paddingRight;
+  if (!Number.isFinite(width) || width <= 0) return rawLineNumbers(text);
+
   const measure = document.createElement("span");
   measure.style.font = style.font;
   measure.style.position = "absolute";
   measure.style.visibility = "hidden";
   measure.textContent = "0";
   document.body.append(measure);
-  const charsPerLine = Math.max(1, Math.floor(width / measure.getBoundingClientRect().width));
+  const charWidth = measure.getBoundingClientRect().width;
   measure.remove();
+  if (!Number.isFinite(charWidth) || charWidth <= 0) return rawLineNumbers(text);
+
+  const charsPerLine = Math.max(1, Math.floor(width / charWidth));
 
   return text
     .split("\n")
@@ -141,14 +147,14 @@ const syncDiffScroll = (source: HTMLElement) => {
 
 const refreshLines = () => {
   inputTextareas.forEach((input, index) => {
-    inputLineNumbers[index].textContent = lineNumbers(input.value);
+    inputLineNumbers[index].textContent = lineNumbersFor(input, input.value);
   });
-  outputLines.textContent = lineNumbers(output.value);
+  outputLines.textContent = lineNumbersFor(output, output.value);
 };
 
 const refreshDiffLines = () => {
   diffEditors.forEach((editor, index) => {
-    diffLineNumbers[index].textContent = diffLineNumbersFor(editor);
+    diffLineNumbers[index].textContent = lineNumbersFor(editor, diffEditorText(editor));
   });
 };
 
@@ -188,12 +194,12 @@ const renderInputs = () => {
     .map(
       (input, index) => `
         <section class="grid min-h-0 grid-rows-[auto_1fr] ${index < active.inputs.length - 1 ? "border-b border-[#3b4261] md:border-r md:border-b-0" : ""}">
-          <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
+          <div class="border-b border-[#292e42] px-2 py-1.5 text-[9px] font-black uppercase text-[#7aa2f7]">
             ${input.label}
           </div>
           <div class="grid min-h-0 grid-cols-[auto_1fr]">
-            <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
-            <textarea class="min-w-0 resize-none overflow-auto bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none placeholder:text-[#565f89]" spellcheck="false" autocomplete="off" wrap="off"></textarea>
+            <pre class="line-numbers m-0 overflow-hidden border-r border-[#292e42] px-1.5 py-2 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
+            <textarea class="min-w-0 resize-none overflow-auto bg-transparent p-2 text-sm leading-7 text-[#c0caf5] outline-none placeholder:text-[#565f89]" spellcheck="false" autocomplete="off" wrap="off"></textarea>
           </div>
         </section>
       `,
@@ -233,12 +239,12 @@ const renderDiffInputs = () => {
     .map(
       (input, index) => `
         <section class="grid min-h-0 grid-rows-[auto_1fr] ${index === 0 ? "border-b border-[#3b4261] md:border-r md:border-b-0" : ""}">
-          <div class="border-b border-[#292e42] px-4 py-3 text-xs font-black uppercase text-[#7aa2f7]">
+          <div class="border-b border-[#292e42] px-2 py-1.5 text-[9px] font-black uppercase text-[#7aa2f7]">
             ${input.label}
           </div>
           <div class="diff-scroll grid min-h-0 grid-cols-[auto_minmax(0,1fr)] overflow-auto">
-            <pre class="line-numbers sticky left-0 z-10 m-0 border-r border-[#292e42] bg-[#16161e] px-3 py-4 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
-            <pre class="diff-editor m-0 min-w-0 bg-transparent p-4 text-sm leading-7 text-[#c0caf5] outline-none" contenteditable="true" spellcheck="false"></pre>
+            <pre class="line-numbers sticky left-0 z-10 m-0 border-r border-[#292e42] bg-[#16161e] px-1.5 py-2 text-right text-sm leading-7 text-[#565f89] select-none" aria-hidden="true">1</pre>
+            <pre class="diff-editor m-0 min-w-0 bg-transparent p-2 text-sm leading-7 text-[#c0caf5] outline-none" contenteditable="true" spellcheck="false"></pre>
           </div>
         </section>
       `,
@@ -285,8 +291,8 @@ const renderModuleSettings = () => {
         const checked =
           localStorage.getItem(settingKey(active.id, setting.id)) ?? String(setting.defaultValue);
         return `
-          <label class="flex gap-2 border-t border-[#3b4261] px-3 py-2">
-            <input class="mt-1" name="${setting.id}" type="checkbox" ${checked === "true" ? "checked" : ""} />
+          <label class="flex gap-1.5 border-t border-[#3b4261] px-1.5 py-1">
+            <input name="${setting.id}" type="checkbox" ${checked === "true" ? "checked" : ""} />
             <span>${setting.label}</span>
           </label>
         `;
@@ -295,13 +301,13 @@ const renderModuleSettings = () => {
       const value = localStorage.getItem(settingKey(active.id, setting.id)) ?? setting.defaultValue;
       const control =
         setting.type === "select"
-          ? `<select class="mt-1 w-full rounded border border-[#3b4261] bg-[#16161e] px-2 py-1 text-[#c0caf5]" name="${setting.id}">
+          ? `<select class="mt-0.5 w-full rounded border border-[#3b4261] bg-[#16161e] px-1 py-0.5 text-[#c0caf5]" name="${setting.id}">
               ${setting.options.map((option) => `<option value="${option.value}" ${option.value === value ? "selected" : ""}>${option.label}</option>`).join("")}
             </select>`
-          : `<input class="mt-1 w-full rounded border border-[#3b4261] bg-[#16161e] px-2 py-1 text-[#c0caf5]" name="${setting.id}" type="text" value="${value}" />`;
+          : `<input class="mt-0.5 w-full rounded border border-[#3b4261] bg-[#16161e] px-1 py-0.5 text-[#c0caf5]" name="${setting.id}" type="text" value="${value}" />`;
 
       return `
-        <label class="block border-t border-[#3b4261] px-3 py-2">
+        <label class="block border-t border-[#3b4261] px-1.5 py-1">
           <span>${setting.label}</span>
           ${control}
         </label>
@@ -315,7 +321,7 @@ const renderTools = () => {
     .map(
       (tool) => `
         <button
-          class="rounded-md px-3 py-2 text-left text-sm font-black ${tool.id === active.id ? "bg-[#7aa2f7] text-[#101014]" : "text-[#9aa5ce] hover:bg-[#292e42]"}"
+          class="rounded px-1.5 py-1 text-left text-[9px] font-black ${tool.id === active.id ? "bg-[#7aa2f7] text-[#101014]" : "text-[#9aa5ce] hover:bg-[#292e42]"}"
           type="button"
           data-tool="${tool.id}"
         >
@@ -394,6 +400,7 @@ wrapLines.addEventListener("change", () => {
   shouldWrapLines = wrapLines.checked;
   localStorage.setItem(wrapLinesKey, String(shouldWrapLines));
   setWrap();
+  refreshLines();
   refreshDiffLines();
 });
 moduleSettings.addEventListener("input", (event) => {
@@ -410,7 +417,10 @@ moduleSettings.addEventListener("input", (event) => {
   );
   run();
 });
-window.addEventListener("resize", refreshDiffLines);
+window.addEventListener("resize", () => {
+  refreshLines();
+  refreshDiffLines();
+});
 action.addEventListener("click", async () => {
   if (active.id === "text-diff") {
     run();

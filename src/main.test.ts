@@ -93,6 +93,37 @@ describe("app integration", () => {
     expect(input().wrap).toBe("soft");
   });
 
+  it("counts wrapped lines in input and output gutters", async () => {
+    await mount();
+
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      bottom: 0,
+      height: 0,
+      left: 0,
+      right: 0,
+      top: 0,
+      width: 10,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    Object.defineProperty(input(), "clientWidth", { configurable: true, value: 20 });
+    Object.defineProperty(output(), "clientWidth", { configurable: true, value: 20 });
+
+    const wrap = document.querySelector<HTMLInputElement>("#wrap-lines")!;
+    wrap.checked = true;
+    wrap.dispatchEvent(new Event("change", { bubbles: true }));
+    change(input(), "abcd\nef");
+    expect(document.querySelector<HTMLElement>("#input-panel .line-numbers")!.textContent).toBe(
+      "1\n\n2",
+    );
+
+    change(output(), "abcd");
+    expect(document.querySelector<HTMLElement>("#output-lines")!.textContent).toBe("1\n");
+
+    rect.mockRestore();
+  });
+
   it("drives JSON to TS settings and saves them", async () => {
     await mount();
     clickTool("json-ts");
